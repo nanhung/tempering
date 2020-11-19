@@ -1,4 +1,5 @@
 #setwd("C:/Users/lanhsieh/Documents/fitdist/linear2")
+#system("time ./mcsim_lin2 linear2.LTMCMC.in")
 
 ## function plotting the evolution of the temperature scale when adjusting it
 plot.all.perks = function (all.perks, mylog="x") {
