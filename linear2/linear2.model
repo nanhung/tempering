@@ -1,0 +1,22 @@
+# Linear Model
+# F. Bois 1996
+# P = A + B * time + Normal (0, SD_true)
+# Setting SD_true to zero gives the deterministic version
+#------------------------------------------------------------------------------
+
+# Outputs
+Outputs = {y, z};
+
+# Model Parameters
+A = 0;
+B = 1;
+SD_y = 0;
+SD_z = 0;
+
+CalcOutputs { 
+  y = A + B * t; 
+  z = y;
+} 
+
+End.
+
