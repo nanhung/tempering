@@ -3,13 +3,13 @@
 
    Model File:  linear2.model
 
-   Date:  Fri Mar 24 16:26:50 2017
+   Date:  Wed Nov 18 19:57:13 2020
 
-   Created by:  "mod v5.6.6"
+   Created by:  "mod v6.1.0"
     -- a model preprocessor by Don Maszle
    ___________________________________________________
 
-   Copyright (c) 1993-2017 Free Software Foundation, Inc.
+   Copyright (c) 1993-2019 Free Software Foundation, Inc.
 
    Model calculations for compartmental model:
 
@@ -59,7 +59,7 @@
 /* For export. Keep track of who we are. */
 char szModelDescFilename[] = "linear2.model";
 char szModelSourceFilename[] = __FILE__;
-char szModelGenAndVersion[] = "mod v5.6.6";
+char szModelGenAndVersion[] = "mod v6.1.0";
 
 /* Externs */
 extern BOOL vbModelReinitd;
