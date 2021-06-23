@@ -1,5 +1,27 @@
-#setwd("C:/Users/lanhsieh/Documents/fitdist/linear2")
-#system("time ./mcsim.linear2 linear2.LTMCMC.in")
+# Function ----------------------------------------------------------------
+# setwd("C:/Users/lanhsieh/Documents/tempering/linear2")
+
+## utility function to extract all information from a perk output
+get.all.perks = function (filename) {
+  ncols = max(count.fields(filename, sep = "\t"))
+  tmp = read.delim(filename, col.names=1:ncols,
+                   sep="\t", fill=T, header=F)
+  index = which(tmp[,1] == "Perks:")
+  perks.table = as.matrix(tmp[index,-1])
+  index = which(tmp[,1] == "Counts:")
+  counts.table = as.matrix(tmp[index,-1])
+  index = which(tmp[,1] == "LnPi(i):")
+  lnpi.table = as.matrix(tmp[index,-1])
+  index = which(tmp[,1] == "Tried Jumps:")
+  try.table = as.matrix(tmp[index,-1])
+  index = which(tmp[,1] == "Accepted Jumps:")
+  accept.table = as.matrix(tmp[index,-1])
+  return(list("perks"  = perks.table,
+              "counts" = counts.table,
+              "lnpi"   = lnpi.table,
+              "trials" = try.table,
+              "accept" = accept.table))
+}
 
 ## function plotting the evolution of the temperature scale when adjusting it
 plot.all.perks = function (all.perks, mylog="x") {
@@ -24,28 +46,6 @@ plot.all.perks = function (all.perks, mylog="x") {
     par(new=T)
   }
   par(new=F)
-}
-
-## utility function to extract all information from a perk output
-get.all.perks = function (filename) {
-  ncols = max(count.fields(filename, sep = "\t"))
-  tmp = read.delim(filename, col.names=1:ncols,
-                   sep="\t", fill=T, header=F)
-  index = which(tmp[,1] == "Perks:")
-  perks.table = as.matrix(tmp[index,-1])
-  index = which(tmp[,1] == "Counts:")
-  counts.table = as.matrix(tmp[index,-1])
-  index = which(tmp[,1] == "LnPi(i):")
-  lnpi.table = as.matrix(tmp[index,-1])
-  index = which(tmp[,1] == "Tried Jumps:")
-  try.table = as.matrix(tmp[index,-1])
-  index = which(tmp[,1] == "Accepted Jumps:")
-  accept.table = as.matrix(tmp[index,-1])
-  return(list("perks"  = perks.table,
-              "counts" = counts.table,
-              "lnpi"   = lnpi.table,
-              "trials" = try.table,
-              "accept" = accept.table))
 }
 
 ## plot the evolution of the slopes of the temperature scale
@@ -164,9 +164,11 @@ compute_neff = function(mcmc, n_temper, index_parms) {
 all.perks = get.all.perks("linear2.LTMCMC.out.perks")
 
 ## plot the evolution of the temperature scale
-pdf("Perk scale evolution.pdf")
-plot.all.perks(all.perks, mylog="")
-dev.off()
+{
+  pdf("Perk scale evolution.pdf")
+  plot.all.perks(all.perks, mylog="")
+  dev.off()
+}
 
 ## plot the evolution of the slopes of the temperature scale
 plot.all.perks.slopes(all.perks, mylog="y")
@@ -182,53 +184,61 @@ n_temper = length(perks)
 n_temper
 
 ## plot last perks and pseudo-priors
-par(mar=c(5, 5, 2, 1))
-lnpseudos = as.numeric(all.perks$lnpi[dim(all.perks$lnpi)[1],])
-lnpseudos = lnpseudos - min(lnpseudos, na.rm=T) + 1
-lnpseudos = lnpseudos[1:which(perks==1)]
-plot(as.numeric(perks), lnpseudos, las=1,
+{
+  par(mar=c(5, 5, 2, 1))
+  lnpseudos = as.numeric(all.perks$lnpi[dim(all.perks$lnpi)[1],])
+  lnpseudos = lnpseudos - min(lnpseudos, na.rm=T) + 1
+  lnpseudos = lnpseudos[1:which(perks==1)]
+  plot(as.numeric(perks), lnpseudos, las=1,
      xlab="Perks", ylab="Log pseudo-prior", cex.lab=1.4,
      type="b", lwd=2, xlim=c(1E-7,1), log="xy")
+}
 
 ## plot the temperatures visits
-pdf("Temperature visits.pdf")
-plot.perks.visits(mcmc, n_temper)
-dev.off()
+{
+  pdf("Temperature visits.pdf")
+  plot.perks.visits(mcmc, n_temper)
+  dev.off()
+}
+
 table(mcmc$IndexT)
 
 ## plot Robbins-Monro pseudo-priors updating 
 plot.Robbins_Monro(mcmc, n_temper, 4, 4)
 
 ## plot the data (remember, for the model y = z)
-pdf("Data and predictions.pdf")
-par(mar=c(5, 5, 7, 7), xpd=F)
-x = seq(1, 10, 1);
-y = c(-1.006879, -2.001636, -2.993538, -3.994545, -5.008485, -6.006281,
-      -6.977793, -8.004303, -8.999835, -9.992217);
-z = c(+1.006879, +2.001636, +2.993538, +3.994545, +5.008485, +6.006281,
-      +6.977793, +8.004303, +8.999835, +9.992217);
-## dev.new()
-xlims = c(0, 10)
-ylims = range(c(y, z))
-plot(x, y, xlim=xlims, ylim=ylims, type="n", pch=16, col="red", las=1,
-     cex.lab=1.5, bty="n")
-## abline(a=0, b=1) # true line, but it's obvious
-## add some random simulations at target
-## mycols = rev(rainbow(n_temper))
-mycols = rev(heat.colors(n_temper))
-for (j in 1:n_temper) {
-  index = which(mcmc$IndexT == j - 1)
-  for (i in 1:20) {
-    abline(0, mcmc$B.1.[sample(index, 1)], col=mycols[j])
+{
+  pdf("Data and predictions.pdf")
+  par(mar=c(5, 5, 7, 7), xpd=F)
+  x = seq(1, 10, 1);
+  y = c(-1.006879, -2.001636, -2.993538, -3.994545, -5.008485, -6.006281,
+        -6.977793, -8.004303, -8.999835, -9.992217);
+  z = c(+1.006879, +2.001636, +2.993538, +3.994545, +5.008485, +6.006281,
+        +6.977793, +8.004303, +8.999835, +9.992217);
+  ## dev.new()
+  xlims = c(0, 10)
+  ylims = range(c(y, z))
+  plot(x, y, xlim=xlims, ylim=ylims, type="n", pch=16, col="red", las=1,
+       cex.lab=1.5, bty="n")
+  ## abline(a=0, b=1) # true line, but it's obvious
+  ## add some random simulations at target
+  ## mycols = rev(rainbow(n_temper))
+  mycols = rev(heat.colors(n_temper))
+  for (j in 1:n_temper) {
+    index = which(mcmc$IndexT == j - 1)
+    for (i in 1:20) {
+      abline(0, mcmc$B.1.[sample(index, 1)], col=mycols[j])
+    }
   }
+  points(x, y, pch=16)
+  points(x, z, pch=16)
+  box()
+  par(xpd=T)
+  legend("topright", inset=c(-0.27,0), legend=perks, lty=1, col=mycols,
+         title="Perks")
+  dev.off() 
 }
-points(x, y, pch=16)
-points(x, z, pch=16)
-box()
-par(xpd=T)
-legend("topright", inset=c(-0.27,0), legend=perks, lty=1, col=mycols,
-       title="Perks")
-dev.off()
+
 
 ## plot linear2 posterior in 2D
 #dev.new()
@@ -237,106 +247,122 @@ plot.lin2.2D(mcmc)
 ## plot linear2 posterior in 3D
 ## plot.lin2.3D(mcmc) # Have problem in rendering
 library(rgl)
-open3d()
-par3d(windowRect=c(20, 60, 770, 810))
-## good.par = par3d()
-## good.par$userMatrix
-my.userMatrix = matrix(
-  c( 0.7632413, -0.6460999, 0.004215047,    0,
-     0.1214922,  0.1499206, 0.981205046,    0,
-     -0.6345884, -0.7483841, 0.192921668,    0,
-     0.0000000,  0.0000000, 0.000000000,    1), byrow=T, 4, 4)
-view3d(fov=30, interactive=F, userMatrix=my.userMatrix)
-index = which(mcmc$IndexT == n_temper - 1)
-plot3d(x=mcmc$SD_y[index], y=mcmc$SD_z[index], z=mcmc$B.1.[index],
-       type="s", size=0.25, zlim=c(-2.3,2.3),
-       xlab="", ylab="", zlab="", col="red")
-## set to True if you do not want the next commands would change the plot size
-par3d(ignoreExtent=T) 
-## add text, such as axes labels
-text3d(x=+15, y=-7,  z=-2.5, "SD2", family="sans", cex=1.5, col="black")
-text3d(x=-12, y=+15, z=-2.5, "SD1", family="sans", cex=1.5, col="black")
-text3d(x=-6,  y=30,  z=1.7, "Slope",    family="sans", cex=1.5, col="black")
-#rgl.snapshot("Joint posterior sample at target - 3D.png", fmt = "png", top =F)
+
+{
+  open3d()
+  par3d(windowRect=c(20, 60, 770, 810))
+  ## good.par = par3d()
+  ## good.par$userMatrix
+  my.userMatrix = matrix(
+    c( 0.7632413, -0.6460999, 0.004215047,    0,
+       0.1214922,  0.1499206, 0.981205046,    0,
+       -0.6345884, -0.7483841, 0.192921668,    0,
+       0.0000000,  0.0000000, 0.000000000,    1), byrow=T, 4, 4)
+  view3d(fov=30, interactive=F, userMatrix=my.userMatrix)
+  index = which(mcmc$IndexT == n_temper - 1)
+  plot3d(x=mcmc$SD_y[index], y=mcmc$SD_z[index], z=mcmc$B.1.[index],
+         type="s", size=0.25, zlim=c(-2.3,2.3),
+         xlab="", ylab="", zlab="", col="red")
+  ## set to True if you do not want the next commands would change the plot size
+  par3d(ignoreExtent=T) 
+  ## add text, such as axes labels
+  text3d(x=+15, y=-7,  z=-2.5, "SD2", family="sans", cex=1.5, col="black")
+  text3d(x=-12, y=+15, z=-2.5, "SD1", family="sans", cex=1.5, col="black")
+  text3d(x=-6,  y=30,  z=1.7, "Slope",    family="sans", cex=1.5, col="black")
+  #rgl.snapshot("Joint posterior sample at target - 3D.png", fmt = "png", top =F)
+}
+
 
 ## Show posterior histograms for a parameter at a time
-pdf("Posterior histograms slope.pdf")
-plot.post.histograms(mcmc, n_temper, parm=1, 3, 4)
-dev.off()
-pdf("Posterior histograms SDy.pdf")
-plot.post.histograms(mcmc, n_temper, parm=2, 3, 4)
-dev.off()
-pdf("Posterior histograms SDz.pdf")
-plot.post.histograms(mcmc, n_temper, parm=3, 3, 4)
-dev.off()
+{
+  pdf("Posterior histograms slope.pdf")
+  plot.post.histograms(mcmc, n_temper, parm=1, 3, 4)
+  dev.off()
+}
+{
+  pdf("Posterior histograms SDy.pdf")
+  plot.post.histograms(mcmc, n_temper, parm=2, 3, 4)
+  dev.off()
+}
+{
+  pdf("Posterior histograms SDz.pdf")
+  plot.post.histograms(mcmc, n_temper, parm=3, 3, 4)
+  dev.off()
+}
+
 
 ## an histogram for the slope at target
 index = which(mcmc$IndexT == n_temper - 1)
 hist(mcmc$B.1.[index], breaks=2000, xlim=c(-1.5,1.5))
 
 ## nice plot of the posterior versus B values
-pdf("Slope posterior smooth.pdf")
-i2 = order(mcmc$B.1.[index])
-x = (mcmc$B.1.[index])[i2]
-y = exp((mcmc$LnPosterior[index])[i2])
-par(mfrow=c(1,2))
-## first panel
-par(mar=c(4, 2, 2, 0))
-xlims = c(-1.015, -0.985)
-## plot(x, y, type="p", bty="n", yaxt="n",
-##      pch=16, xlim=xlims, xlab="Slope", cex=0.25, ylab="")
-## par(new=T)
-m1 = mean(x[x > xlims[1] & x < xlims[2]])
-s1 = sd(x[x > xlims[1] & x < xlims[2]])
-x2 = seq(xlims[1], xlims[2], (xlims[2] - xlims[1])/300)
-plot(x2, dnorm(x2, m1, s1), xlim=xlims, type="l", xaxt="n", yaxt="n",
-     xlab="", ylab="", bty="n", col="red", lwd=2)
-axis(1, at=c(xlims[1], -1.01, -1, -0.99, xlims[2]),
-     labels=c("", "-1.01", "-1", "-0.99", ""), line=0.2)
-mtext("...", side=1, at=c(-0.9828, 0))
-mtext("Slope", side=1, line=2.5, at=-0.9828, cex=2)
-par(xpd=NA)
-lines(c(-0.9835, -0.9825), c(-10, 10)) # break marks
-lines(c(-0.9825, -0.9815), c(-10, 10)) # break marks
-par(xpd=F)
-## second panel
-par(mar=c(4, 1, 2, 2))
-xlims = rev(-c(-1.015, -0.985))
-## plot(x, y, type="p", bty="n", yaxt="n",
-##      pch=16, xlim=xlims, xlab="Slope", cex=0.25, ylab="")
-## par(new=T)
-m1 = mean(x[x > xlims[1] & x < xlims[2]])
-s1 = sd(x[x > xlims[1] & x < xlims[2]])
-x2 = seq(xlims[1], xlims[2], (xlims[2] - xlims[1])/300)
-plot(x2, dnorm(x2, m1, s1), xlim=xlims, type="l", xaxt="n", yaxt="n",
-     xlab="", ylab="", bty="n", col="red", lwd=2)
-axis(1, at=c(xlims[1], rev(-c(-1.01, -1, -0.99)), xlims[2]),
-     labels=c("", "0.99", "1", "1.01", ""), line=0.2)
-dev.off()
+{
+  pdf("Slope posterior smooth.pdf")
+  i2 = order(mcmc$B.1.[index])
+  x = (mcmc$B.1.[index])[i2]
+  y = exp((mcmc$LnPosterior[index])[i2])
+  par(mfrow=c(1,2))
+  ## first panel
+  par(mar=c(4, 2, 2, 0))
+  xlims = c(-1.015, -0.985)
+  ## plot(x, y, type="p", bty="n", yaxt="n",
+  ##      pch=16, xlim=xlims, xlab="Slope", cex=0.25, ylab="")
+  ## par(new=T)
+  m1 = mean(x[x > xlims[1] & x < xlims[2]])
+  s1 = sd(x[x > xlims[1] & x < xlims[2]])
+  x2 = seq(xlims[1], xlims[2], (xlims[2] - xlims[1])/300)
+  plot(x2, dnorm(x2, m1, s1), xlim=xlims, type="l", xaxt="n", yaxt="n",
+       xlab="", ylab="", bty="n", col="red", lwd=2)
+  axis(1, at=c(xlims[1], -1.01, -1, -0.99, xlims[2]),
+       labels=c("", "-1.01", "-1", "-0.99", ""), line=0.2)
+  mtext("...", side=1, at=c(-0.9828, 0))
+  mtext("Slope", side=1, line=2.5, at=-0.9828, cex=2)
+  par(xpd=NA)
+  lines(c(-0.9835, -0.9825), c(-10, 10)) # break marks
+  lines(c(-0.9825, -0.9815), c(-10, 10)) # break marks
+  par(xpd=F)
+  ## second panel
+  par(mar=c(4, 1, 2, 2))
+  xlims = rev(-c(-1.015, -0.985))
+  ## plot(x, y, type="p", bty="n", yaxt="n",
+  ##      pch=16, xlim=xlims, xlab="Slope", cex=0.25, ylab="")
+  ## par(new=T)
+  m1 = mean(x[x > xlims[1] & x < xlims[2]])
+  s1 = sd(x[x > xlims[1] & x < xlims[2]])
+  x2 = seq(xlims[1], xlims[2], (xlims[2] - xlims[1])/300)
+  plot(x2, dnorm(x2, m1, s1), xlim=xlims, type="l", xaxt="n", yaxt="n",
+       xlab="", ylab="", bty="n", col="red", lwd=2)
+  axis(1, at=c(xlims[1], rev(-c(-1.01, -1, -0.99)), xlims[2]),
+       labels=c("", "0.99", "1", "1.01", ""), line=0.2)
+  dev.off()
+}
 
 ## alternative nice plot of the posterior versus B values
-pdf("Slope posterior sample.pdf")
-i2 = order(mcmc$B.1.[index])
-x = (mcmc$B.1.[index])[i2]
-y = exp((mcmc$LnPosterior[index])[i2])
-par(mfrow=c(1,2))
-## first panel
-par(mar=c(4, 2, 2, 0))
-xlims = c(-1.015, -0.985)
-plot(x, y, type="p", bty="n", xaxt="n", yaxt="n",
-     pch=16, xlim=xlims, xlab="", cex=0.3, ylab="")
-axis(1, at=c(xlims[1], -1.01, -1, -0.99, xlims[2]),
-     labels=c("", "-1.01", "-1", "-0.99", ""), line=0.2)
-mtext("...", side=1, at=c(-0.9828, 0))
-mtext("Slope", side=1, line=2.5, at=-0.9828, cex=2)
-## second panel
-par(mar=c(4, 1, 2, 2))
-xlims = rev(-c(-1.015, -0.985))
-plot(x, y, type="p", bty="n", xaxt="n", yaxt="n",
-     pch=16, xlim=xlims, xlab="", cex=0.3, ylab="")
-axis(1, at=c(xlims[1], rev(-c(-1.01, -1, -0.99)), xlims[2]),
-     labels=c("", "0.99", "1", "1.01", ""), line=0.2)
-dev.off()
+{
+  pdf("Slope posterior sample.pdf")
+  i2 = order(mcmc$B.1.[index])
+  x = (mcmc$B.1.[index])[i2]
+  y = exp((mcmc$LnPosterior[index])[i2])
+  par(mfrow=c(1,2))
+  ## first panel
+  par(mar=c(4, 2, 2, 0))
+  xlims = c(-1.015, -0.985)
+  plot(x, y, type="p", bty="n", xaxt="n", yaxt="n",
+       pch=16, xlim=xlims, xlab="", cex=0.3, ylab="")
+  axis(1, at=c(xlims[1], -1.01, -1, -0.99, xlims[2]),
+       labels=c("", "-1.01", "-1", "-0.99", ""), line=0.2)
+  mtext("...", side=1, at=c(-0.9828, 0))
+  mtext("Slope", side=1, line=2.5, at=-0.9828, cex=2)
+  ## second panel
+  par(mar=c(4, 1, 2, 2))
+  xlims = rev(-c(-1.015, -0.985))
+  plot(x, y, type="p", bty="n", xaxt="n", yaxt="n",
+       pch=16, xlim=xlims, xlab="", cex=0.3, ylab="")
+  axis(1, at=c(xlims[1], rev(-c(-1.01, -1, -0.99)), xlims[2]),
+       labels=c("", "0.99", "1", "1.01", ""), line=0.2)
+  dev.off()
+}
+
 
 ## plot trajectory
 plot(mcmc$B.1.[index], type="l", pch=".")
